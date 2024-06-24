@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// init funcion to load data and spawn a goroutine for cleanup
 func InitData() {
 	LoadClients()
 	ticker := time.NewTicker(2 * time.Minute)
@@ -107,14 +106,12 @@ func (d *dynamicConfigurableLimiter) SetLastSeen(t time.Time) {
 func Limit(next func(writer http.ResponseWriter, request *http.Request)) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract the IP address from the request.
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			logger.Error("error in extracting Ip", zap.Error(err))
 			return
 		}
-		// Lock the mutex to protect this section from race conditions.
 		mu.Lock()
 		if _, found := clients[ip]; !found {
 			clients[ip] = NewConfigurableLimiter(2, 4)
@@ -122,12 +119,11 @@ func Limit(next func(writer http.ResponseWriter, request *http.Request)) http.Ha
 		clients[ip].SetLastSeen(time.Now())
 
 		if !clients[ip].Allow() {
-			//unlock if request doest not allow
 			mu.Unlock()
 			clients[ip].AddDropped()
 			message := Message{
 				Status: "Request Failed",
-				Body:   "The API is at capacity, try again later.",
+				Body:   "The API is full, try again later.",
 			}
 
 			w.WriteHeader(http.StatusTooManyRequests)

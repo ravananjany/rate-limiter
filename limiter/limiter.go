@@ -65,14 +65,12 @@ type Message struct {
 }
 
 var (
-	mu sync.Mutex
-	//map holds client IP against limiter
+	mu      sync.Mutex
 	clients = make(map[string]DynamicConfigurableLimiter)
 	logger  = zap.NewExample()
 	done    = make(chan os.Signal, 1)
 )
 
-// Inititaing limiter
 func NewConfigurableLimiter(rps float64, b int) DynamicConfigurableLimiter {
 	return &dynamicConfigurableLimiter{rps: rps, burst: b, limiterlib: lib.NewRateLimiterInterface(rps, b)}
 
@@ -102,7 +100,6 @@ func (d *dynamicConfigurableLimiter) SetLastSeen(t time.Time) {
 	d.lastSeen = t
 }
 
-// function that limits the rate and returns a http.Handler
 func Limit(next func(writer http.ResponseWriter, request *http.Request)) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +122,7 @@ func Limit(next func(writer http.ResponseWriter, request *http.Request)) http.Ha
 				Status: "Request Failed",
 				Body:   "The API is full, try again later.",
 			}
-
+			logger.Info("request dropped", zap.Any(ip, clients[ip]))
 			w.WriteHeader(http.StatusTooManyRequests)
 			json.NewEncoder(w).Encode(&message)
 			return

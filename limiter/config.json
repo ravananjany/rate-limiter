@@ -1,0 +1,13 @@
+    {"clients": [{"inet":"127.0.0.1"}],
+    "logging" :{
+        "level": "debug",
+        "encoding": "json",
+        "outputPaths": ["stdout", "/tmp/logs"],
+        "errorOutputPaths": ["stderr"],
+        "initialFields": {"foo": "bar"},
+        "encoderConfig": {
+          "messageKey": "message",
+          "levelKey": "level",
+          "levelEncoder": "lowercase"
+        }
+      }}
